@@ -10,7 +10,8 @@ from keras.layers import Dense,Dropout,Activation,BatchNormalization,Lambda
 from keras.regularizers import l2
 from keras.optimizers import Adam
 from keras.optimizers import SGD
-
+from keras import regularizers
+from imblearn.over_sampling import SMOTE
 
 def Maxout(x, num_unit=None):
     """
@@ -59,17 +60,19 @@ df=df.rename(index=str, columns={"PAY_0": "PAY_1"})
 print("done")
 print()
 
-
+'''
 print("df.describe()...")
 print(df.describe())
 print()
 
 
 print("df2.describe()...")
+'''
 df2=df.astype('int64')
+'''
 print(df2.describe())
 print()
-
+'''
 '''
 print("compare df df2...")
 check=True
@@ -115,6 +118,12 @@ print("one hot encodding 'SEX','EDUCATION','MARRIAGE' as X, and default as Y..."
 X=pd.get_dummies(df4,columns=["SEX","EDUCATION","MARRIAGE"])
 Y=X["default.payment.next.month"].astype('category')
 X=X.drop("default.payment.next.month", axis=1).astype("int")
+print("done")
+print()
+
+print("describe X Y...")
+print(X.describe())
+print(Y.describe())
 X=X.as_matrix()
 Y=Y.as_matrix()
 print("done")
@@ -123,57 +132,89 @@ print()
 
 print("splitting training and testing...")
 X_train,X_test,Y_train,Y_test=train_test_split(X, Y, test_size=0.1, random_state=10)
-y_train=utils.to_categorical(Y_train,2)
-y_test=utils.to_categorical(Y_test,2)
+X_train,X_val, Y_train, Y_val=train_test_split(X_train, Y_train, test_size=0.1, random_state=10)
 print("done")
 print()
+'''
+print("oversampling...")
+sm = SMOTE(ratio = 1.0)
+X_train_res, Y_train_res = sm.fit_sample(X_train, Y_train)
+print("done")
+print()
+'''
+#y_train_res=utils.to_categorical(Y_train_res,2)
+y_train=utils.to_categorical(Y_train,2)
+y_test=utils.to_categorical(Y_test,2)
+y_val=utils.to_categorical(Y_val,2)
 
+
+import logging
+
+from sklearn.metrics import roc_auc_score
+from keras.callbacks import Callback
+
+
+class IntervalEvaluation(Callback):
+    def __init__(self, validation_data=(), interval=10):
+        super(Callback, self).__init__()
+        self.interval = interval
+        self.X_val, self.y_val = validation_data
+
+    def on_epoch_end(self, epoch, logs={}):
+        if epoch % self.interval == 0:
+            y_pred = self.model.predict_proba(self.X_val, verbose=0)
+            self.score = roc_auc_score(self.y_val, y_pred)
+            print("  -  val auc score:", self.score)
 
 print("deep model...")
 model=Sequential()
 
-model.add(Dense(100,input_dim=57))
+model.add(Dense(120,input_dim=57))
 model.add(BatchNormalization())
 model.add(Lambda(Maxout))
-model.add(Dropout(0.3))
-model.add(Dense(500))
-model.add(BatchNormalization())
-model.add(Lambda(Maxout))
-model.add(Dropout(0.3))
-model.add(Dense(1000))
-model.add(BatchNormalization())
-model.add(Lambda(Maxout))
-model.add(Dropout(0.3))
+model.add(Dropout(0.2))
+
 model.add(Dense(80))
 model.add(BatchNormalization())
 model.add(Lambda(Maxout))
-model.add(Dropout(0.3))
+model.add(Dropout(0.2))
+'''
+model.add(Dense(1000))
+model.add(BatchNormalization())
+model.add(Lambda(Maxout))
+#model.add(Dropout(0.3))
+'''
+model.add(Dense(30))
+model.add(BatchNormalization())
+model.add(Lambda(Maxout))
+model.add(Dropout(0.2))
 model.add(Dense(2))
 model.add(BatchNormalization())
 model.add(Activation('softmax'))
 
-
-learning_rate = 0.001
+'''
+learning_rate = 0.01
 decay_rate = learning_rate / 800
 momentum = 0.8
 sgd = SGD(lr=learning_rate, momentum=momentum, decay=decay_rate, nesterov=False)
-
+'''
 model.compile(loss='categorical_crossentropy',
-                optimizer=sgd,
+                optimizer=Adam(lr=0.000003),
                 metrics=['accuracy'])
 print("done")
 print()
 
-
-
+ival = IntervalEvaluation(validation_data=(X_val, y_val), interval=1)
 print("learning...")
-earlyStopping=keras.callbacks.EarlyStopping(monitor='val_loss', patience=0, verbose=0, mode='auto')
+earlyStopping=keras.callbacks.EarlyStopping(monitor='val_loss', patience=4, verbose=0, mode='auto')
 history=model.fit(X_train,y_train,
-                batch_size=50,
-                epochs=100,
+                validation_data=(X_val,y_val),
+                batch_size=10,
+                epochs=400,
                 shuffle=True,
-                validation_split=0.1,
-                callbacks=[earlyStopping])
+                callbacks=[ival,earlyStopping],
+                class_weight ="auto"
+                )
 
 
 loss=history.history.get('loss')
@@ -182,8 +223,12 @@ val_loss=history.history.get('val_loss')
 val_acc=history.history.get('val_acc')
 test_score= model.evaluate(X_test, y_test, verbose=0)
 print(" - test_loss: ",test_score[0]," - test_acc: ",test_score[1])
+y_pred=model.predict_proba(X_test, verbose=0)
+score=roc_auc_score(y_test , y_pred)
+print(" - test auc score: ", score)
 print("done")
 print()
+
 
 
 print("print plot...")
@@ -198,7 +243,7 @@ plt.plot(range(len(acc)),acc,label='acc')
 plt.plot(range(len(val_acc)),val_acc,label='val_acc')
 plt.title('acc')
 plt.legend(loc='lower right')
-plt.savefig('origin_network.png',dpi=300,format='png')
+plt.savefig('origin_network02.png',dpi=300,format='png')
 plt.close()
 print("done")
 print()
