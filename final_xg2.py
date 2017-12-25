@@ -84,7 +84,7 @@ print(Y.describe())
 print("done")
 print()
 
-'''
+
 import warnings
 from sklearn.feature_selection import SelectKBest, f_classif
 
@@ -105,9 +105,9 @@ preprocess = Pipeline([('anova', selector), ('scale', scaler)])
 preprocess.fit(X,Y)
 X_prep = preprocess.transform(X)
 X_prep = pd.DataFrame(X_prep)
-'''
+
 print("splitting training and testing...")
-X_train,X_test,y_train,y_test=train_test_split(X, Y, test_size=0.1, random_state=10)
+X_train,X_test,y_train,y_test=train_test_split(X_prep, Y, test_size=0.1, random_state=10)
 print("done")
 print()
 
@@ -174,32 +174,32 @@ gsearch1 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimat
  param_grid = param_test1, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch1.fit(X_train,y_train)
 print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_)
-#3,3
+#3,1
 '''
 '''
 param_test2 = {
  'max_depth':[2,3,4],
- 'min_child_weight':[2,3,4]
+ 'min_child_weight':[0,1,2]
 }
-gsearch2 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=140, max_depth=5,
+gsearch2 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=140, max_depth=3,
  min_child_weight=1, gamma=0, subsample=0.8, colsample_bytree=0.8,
  objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
  param_grid = param_test2, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch2.fit(X_train,y_train)
 print(gsearch2.grid_scores_, gsearch2.best_params_, gsearch2.best_score_)
-#2,4
+#2,2
 '''
 '''
 param_test3 = {
     'gamma':[i/10.0 for i in range(0,5)]
         }
 gsearch3 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=140, max_depth=2,
- min_child_weight=4, gamma=0, subsample=0.8, colsample_bytree=0.8,
+ min_child_weight=2, gamma=0, subsample=0.8, colsample_bytree=0.8,
  objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
  param_grid = param_test3, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch3.fit(X_train,y_train)
 print(gsearch3.grid_scores_, gsearch3.best_params_, gsearch3.best_score_)
-0
+#0.3
 '''
 '''
 param_test4 = {
@@ -207,49 +207,49 @@ param_test4 = {
     'colsample_bytree':[i/10.0 for i in range(6,10)]
         }
 gsearch4 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=140, max_depth=2,
- min_child_weight=4, gamma=0, subsample=0.8, colsample_bytree=0.8,
+ min_child_weight=2, gamma=0.3, subsample=0.8, colsample_bytree=0.8,
  objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
  param_grid = param_test4, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch4.fit(X_train,y_train)
 print(gsearch4.grid_scores_, gsearch4.best_params_, gsearch4.best_score_)
-#0.9,0.6
+#0.8,0.8
 '''
 '''
 param_test5 = {
-    'subsample':[i/100.0 for i in range(80,100,5)],
-    'colsample_bytree':[i/100.0 for i in range(50,70,5)]
+    'subsample':[i/100.0 for i in range(70,95,5)],
+    'colsample_bytree':[i/100.0 for i in range(70,95,5)]
         }
 gsearch5 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=140, max_depth=2,
- min_child_weight=4, gamma=0, subsample=0.9, colsample_bytree=0.6,
+ min_child_weight=2, gamma=0.3, subsample=0.8, colsample_bytree=0.8,
  objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
  param_grid = param_test5, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch5.fit(X_train,y_train)
 print(gsearch5.grid_scores_, gsearch5.best_params_, gsearch5.best_score_)
-#0.9,0.6
+#0.8,0.8
 '''
 '''
 param_test6 = {
     'reg_alpha':[1e-5, 1e-2, 0.1, 1, 100]
         }
 gsearch6 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=177, max_depth=2,
- min_child_weight=4, gamma=0, subsample=0.9, colsample_bytree=0.6,
+ min_child_weight=2, gamma=0.3, subsample=0.8, colsample_bytree=0.8,
  objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
  param_grid = param_test6, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch6.fit(X_train,y_train)
 print(gsearch6.grid_scores_, gsearch6.best_params_, gsearch6.best_score_)
-#1
+#1e-05
 '''
 '''
 param_test7 = {
-    'reg_alpha':[0.1,0.5,1,5,10]
+    'reg_alpha':[5e-07,1e-06,5e-06,1e-05,2e-05,5e-05,1e-04,2e-04,5e-04,1e-03]
         }
 gsearch7 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.2, n_estimators=177, max_depth=2,
- min_child_weight=4, gamma=0, subsample=0.9, colsample_bytree=0.6,
+ min_child_weight=2, gamma=0.3, subsample=0.8, colsample_bytree=0.8,
  objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
  param_grid = param_test7, scoring='roc_auc',n_jobs=4,iid=False, cv=5,verbose=10)
 gsearch7.fit(X_train,y_train)
 print(gsearch7.grid_scores_, gsearch7.best_params_, gsearch7.best_score_)
-#0.5
+#0.0001
 '''
 
 predictors = X_train.columns.values.tolist()
@@ -257,14 +257,14 @@ xgb2 = XGBClassifier(
  learning_rate =0.01,
  n_estimators=5000,
  max_depth=2,
- min_child_weight=4,
- gamma=0,
- subsample=0.9,
- colsample_bytree=0.6,
+ min_child_weight=2,
+ gamma=0.3,
+ subsample=0.8,
+ colsample_bytree=0.8,
  objective= 'binary:logistic',
  nthread=4,
  scale_pos_weight=1,
- reg_alpha=0.5,
+ reg_alpha=0.0001,
  seed=27)
 modelfit(xgb2, X_train, y_train, X_test, y_test, predictors)
 
